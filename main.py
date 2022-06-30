@@ -1,5 +1,4 @@
 from datetime import time
-from json import load
 import msoffcrypto
 import os
 import sys
@@ -45,18 +44,18 @@ def decrypt_file(src):
 
 def create_df():
     try:
-        df = pd.read_excel(decrypted, sheet_name='Schedule',
-                           header=[1])
+        df = pd.read_excel(decrypted, sheet_name="Schedule", header=[1])
     except:
-        df = pd.read_excel(file, sheet_name='Schedule',
-                           header=[1])
+        df = pd.read_excel(file, sheet_name="Schedule", header=[1])
 
     print("Created dataframe")
 
-    df = df.loc[(df['Ready'].str.contains('Y')) |
-                (df['Ready'].str.contains('y')) |
-                (df['WC Ready'].str.contains('Y')) |
-                (df['WC Ready'].str.contains('y'))].copy()
+    df = df.loc[
+        (df["Ready"].str.contains("Y"))
+        | (df["Ready"].str.contains("y"))
+        | (df["WC Ready"].str.contains("Y"))
+        | (df["WC Ready"].str.contains("y"))
+    ].copy()
 
     df.columns = [
         "requested",
@@ -89,21 +88,24 @@ def create_df():
 
     df.fillna("", inplace=True)
 
-    df['wh_issue_date'] = pd.to_datetime(
-        df['wh_issue_date'], errors='coerce').dt.strftime('%Y-%m-%d')
-    df['request'] = pd.to_datetime(
-        df['request'], errors='coerce').dt.strftime('%Y-%m-%d')
-    df['in_parts_prep_by'] = pd.to_datetime(
-        df['in_parts_prep_by'], errors='coerce').dt.strftime('%Y-%m-%d')
-    df['run_date_time'] = pd.to_datetime(
-        df['run_date_time'], errors='coerce').dt.strftime('%Y-%m-%d')
-    df['x'] = pd.to_datetime(
-        df['x'], errors='coerce').dt.strftime('%Y-%m-%d')
+    df["wh_issue_date"] = pd.to_datetime(
+        df["wh_issue_date"], errors="coerce"
+    ).dt.strftime("%Y-%m-%d")
+    df["request"] = pd.to_datetime(df["request"], errors="coerce").dt.strftime(
+        "%Y-%m-%d"
+    )
+    df["in_parts_prep_by"] = pd.to_datetime(
+        df["in_parts_prep_by"], errors="coerce"
+    ).dt.strftime("%Y-%m-%d")
+    df["run_date_time"] = pd.to_datetime(
+        df["run_date_time"], errors="coerce"
+    ).dt.strftime("%Y-%m-%d")
+    df["x"] = pd.to_datetime(df["x"], errors="coerce").dt.strftime("%Y-%m-%d")
 
-    df['r'] = df['r'].astype(str)
-    df['qty'] = df['qty'].astype(str)
-    df['mp'] = df['mp'].astype(str)
-    df['pallets'] = df['pallets'].astype(str)
+    df["r"] = df["r"].astype(str)
+    df["qty"] = df["qty"].astype(str)
+    df["mp"] = df["mp"].astype(str)
+    df["pallets"] = df["pallets"].astype(str)
 
     return df
 
@@ -112,7 +114,9 @@ def connect_to_sqlite_and_read_into_df():
     try:
         with sqlite3.connect(sql_db) as conn:
             df = pd.read_sql_query(
-                """SELECT * FROM 'Released Schedule' WHERE lot NOT LIKE '%W' ORDER BY run_date_time DESC""", conn)
+                """SELECT * FROM 'Released Schedule' WHERE lot NOT LIKE '%W' ORDER BY run_date_time DESC""",
+                conn,
+            )
 
     except Exception as e:
         print(e)
@@ -121,20 +125,19 @@ def connect_to_sqlite_and_read_into_df():
     return df
 
 
-def concat_dfs_drop_duplicates_drop_table_insert_table(df1, df2):
-    df2 = df2.drop(columns=['id'])
+def concat_dfs_drop_duplicates_drop_table_insert_table(df1, df2) -> pd.DataFrame:
+    df2 = df2.drop(columns=["id"])
 
     df = pd.concat([df1, df2], ignore_index=True)
 
-    df = df.drop_duplicates(subset=['lot'])
+    df = df.drop_duplicates(subset=["lot"])
 
     print("Original {} -> Updated {}".format(len(df2), len(df)))
 
     try:
         with sqlite3.connect(sql_db) as conn:
 
-            df.to_sql('Released Schedule', con=conn,
-                      if_exists='replace', index=False)
+            df.to_sql("Released Schedule", con=conn, if_exists="replace", index=False)
 
     except Exception as e:
         print(e)
